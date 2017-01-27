@@ -1,0 +1,27 @@
+AMAZON.StartOverIntent start
+AMAZON.StartOverIntent begin
+AMAZON.StartOverIntent new
+AMAZON.StartOverIntent main menu
+AMAZON.StartOverIntent menu
+
+AMAZON.StopIntent no thank you
+AMAZON.StopIntent no thanks
+AMAZON.StopIntent goodbye
+AMAZON.StopIntent stop
+AMAZON.StopIntent quit
+AMAZON.StopIntent exit
+
+PlayNote play {Note}
+PlayNote play note {Note}
+PlayNote {Note}
+
+PlayFlat Play {Note} Flat
+PlayFlat {Note} Flat
+
+PlaySharp Play {Note} Sharp
+PlaySharp {Note} Sharp
+
+Replay replay
+Replay replay notes
+Replay replay music
+Replay replay prior notes

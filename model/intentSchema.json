@@ -1,0 +1,49 @@
+{
+  "intents": [
+    {
+      "intent": "PlayNote",
+		"slots": [
+        {
+          "name": "Note",
+          "type": "LIST_OF_NOTES"
+        }
+      ]
+    },
+    {
+      "intent": "PlayFlat",
+		"slots": [
+        {
+          "name": "Note",
+          "type": "LIST_OF_NOTES"
+        }
+      ]
+    },
+    {
+      "intent": "PlaySharp",
+		"slots": [
+        {
+          "name": "Note",
+          "type": "LIST_OF_NOTES"
+        }
+      ]
+    },
+    {
+      "intent": "Replay"
+    },
+    {
+      "intent": "AMAZON.StartOverIntent"
+    },
+    {
+      "intent": "AMAZON.HelpIntent"
+    },
+    {
+      "intent": "AMAZON.StopIntent"
+    },
+    {
+      "intent": "AMAZON.RepeatIntent"
+    },    
+    {
+      "intent": "AMAZON.CancelIntent"
+    }
+  ]
+}
