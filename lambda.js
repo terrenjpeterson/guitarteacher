@@ -6,7 +6,9 @@ var aws = require('aws-sdk');
 var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
 
 // this is used by the VoiceLabs analytics
+var APP_ID =
 var VoiceInsights =require('voice-insights-sdk'),
+  VI_APP_TOKEN = 
 
 // six string guitar notes
 var fretboard = {
@@ -115,6 +117,16 @@ function onIntent(intentRequest, session, callback) {
         playNote(intent, session, callback);
     } else if ("TeachNote" === intentName) {
         teachNote(session, callback);
+    } else if ("NextPart" === intentName) {
+        if (session.attributes == null) {
+            teachNote(session, callback);
+        } else if (session.attributes.stringLesson === 1) {
+            secondString(session, callback);
+        } else if (session.attributes.stringLesson === 2) {
+            thirdString(session, callback);
+        } else {
+            teachNote(session, callback);
+        }
     } else if ("TeachChord" === intentName) {
         teachChord(session, callback);
     } else if ("HowChord" === intentName) {
@@ -190,12 +202,11 @@ function getWelcomeResponse(session, callback) {
     });
 }
 
-// this is the function that gets called to format the response to the user when they first boot the app
+// this is the function that starts of on basic note instruction starting with the first string on the guitar
 
 function teachNote(session, callback) {
-    var sessionAttributes = {};
     var shouldEndSession = false;
-    var cardTitle = "Welcome to Guitar Teacher";
+    var cardTitle = "Note Instruction";
 
     console.log("Teach Note Invoked");
 
@@ -208,21 +219,165 @@ function teachNote(session, callback) {
     
     var audioOutput = "<speak>";
         audioOutput = audioOutput +  "Guitar Teacher can help you learn individual notes on the guitar. ";
-        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/openNeck.mp3\" />";
-        audioOutput = audioOutput + "Let's get started on how the scale works. What you just heard are all six " +
-            "strings being played without any fingers on the neck of the guitar. Each string has its own note " +
-            "and there are twelve different notes on the scale. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/e3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "What you just heard was the note E. It's the native note on the first string " +
+            "of the guitar. If we start by focusing on the notes for the first string, it's the best place to start " +
+            "learning how the scale works. ";
+        audioOutput = audioOutput + "The fretboard is the part of the guitar that the strings run along, and allow " +
+            "for placement of your fingers to press down on the strings. The top of the fretboard is called the nut. " +
+            "Using your index finger, press on the first string between the nut and the first fret, then play the string. " +
+            "It should sound like this. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/f3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "That sound is one note higher than the E, and is called F. " +
+            "Now lets move your index finger up one more fret and play the string again. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/f3sharp.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "That is the next key on the scale, and is called F Sharp. " +
+            "We can think of Sharp as a half-key, meaning that the sounds is half-way between F and G. ";
+
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "Now you're probably noticing the pattern, but let's keep going. Go up one more fret " +
+            "and play the string again. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/g3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "This note is G, and is one step above F Sharp. " +
+            "So the first lesson is that for each fret we move our finger on, it plays a higher note. ";
+
+        audioOutput = audioOutput + "If you're ready for the next step in learning notes, say Next.";
         audioOutput = audioOutput + "</speak>";
 
-    var cardOutput = "How to play individual notes\n";
+    var cardOutput = "How to play individual notes.";
+    var objectOutput = "FirstString";
 
     var repromptText = "Please start by saying something like Where is E and I will walk you through how to find it.";
 
+    // now save off data for session
+    var sessionAttributes = {};
+        sessionAttributes.lastIntent = "TeachNote";
+        sessionAttributes.stringLesson = 1;
+
+    // track analytics and callback with the response
 	VoiceInsights.track('TeachNote', null, null, (err, res) => {
 	    console.log('voice insights logged' + JSON.stringify(res));
 
         callback(sessionAttributes,
-            buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
+            buildAudioCardResponse(cardTitle, audioOutput, cardOutput, objectOutput, repromptText, shouldEndSession));
+    });
+}
+
+// this is the function that starts of on basic note instruction starting with the second string on the guitar
+
+function secondString(session, callback) {
+    var shouldEndSession = false;
+    var cardTitle = "Note Instruction";
+
+    console.log("Teach Note Invoked - Next Section");
+    
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput + "Let's go down to the second string and play more notes. ";
+        audioOutput = audioOutput + "If we play the second string without using any fingers on the fretboard " +
+            "The sound that will be played is the note B. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/b3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Now use your index finger and press down on the string for the first fret. " +
+            "Then play the second string and it should play the note C. Go ahead and do that now. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/c3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Let's continue moving up the fretboard and move your index finger one fret " +
+            "and then play the second string again. This should be the note C Sharp. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/c3sharp.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Keep up the pattern by moving over another fret and pick the second string again. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/d3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "This note is D. Let's go over one more fret and pick the second string again.";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/d3sharp.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "If you're ready for the next step in learning notes, say Next.";
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "How to play individual notes on the second string.";
+    var objectOutput = "SecondString";
+
+    var repromptText = "When you are ready for the next section, please say Next.";
+
+    // now save off data for session
+    var sessionAttributes = {};
+        sessionAttributes.lastIntent = "TeachNote";
+        sessionAttributes.stringLesson = 2;
+
+	VoiceInsights.track('SecondString', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioCardResponse(cardTitle, audioOutput, cardOutput, objectOutput, repromptText, shouldEndSession));
+    });
+}
+
+// this is the function that starts of on basic note instruction starting with the third string on the guitar
+
+function thirdString(session, callback) {
+    var shouldEndSession = false;
+    var cardTitle = "Note Instruction";
+
+    console.log("Teach Note Invoked - Third Section");
+    
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput + "Let's go down to the third string and play more notes. ";
+        audioOutput = audioOutput + "If we play the third string without using any fingers on the fretboard " +
+            "The sound that will be played is the note G. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/g2.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Now use your index finger and press down on the string for the first fret. " +
+            "Then play the third string and it should play the note G Sharp. Go ahead and do that now. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/g2sharp.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Let's continue moving up the fretboard and move your index finger one fret " +
+            "and then play the third string again. This should be the note A. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/a3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Keep up the pattern by moving over another fret and pick the third string again. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/a3sharp.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "This note is A Sharp. Let's go over one more fret and pick the third string again.";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/b3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "If you're ready for the next step in learning notes, say Next.";
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "How to play individual notes on the third string.";
+    var objectOutput = "ThirdString";
+
+    var repromptText = "When you are ready for the next section, please say Next.";
+
+    // now save off data for session
+    var sessionAttributes = {};
+        sessionAttributes.lastIntent = "TeachNote";
+        sessionAttributes.stringLesson = 3;
+
+	VoiceInsights.track('ThirdString', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioCardResponse(cardTitle, audioOutput, cardOutput, objectOutput, repromptText, shouldEndSession));
     });
 }
 
@@ -349,18 +504,25 @@ function outputIndivChord(chordData, intent, session, callback) {
         audioOutput = audioOutput +  "Okay, let's get started on how to play the chord " + chordData.chordDesc + ". ";
         audioOutput = audioOutput + "<audio src=\"" + noteLib + "Chord" + chordData.chordName + ".mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "Here are the finger positions. ";
 
-        audioOutput = audioOutput + "Here are the finger positions. Your index finger will be on string " + 
+    if (chordData.fingers[0] > 0) {
+        audioOutput = audioOutput + "Your index finger will be on string " + 
             chordData.fingers[0] + " pressing down on fret " + chordData.strings[chordData.fingers[0] - 1] + ". ";
         audioOutput = audioOutput + "<break time=\"2s\"/>";
-        
+    }
+
+    if (chordData.fingers[1] > 0) {        
         audioOutput = audioOutput + "Your middle finger will be on string " + chordData.fingers[1] +
             " pressing down on fret " + chordData.strings[chordData.fingers[1] - 1] + ". ";
         audioOutput = audioOutput + "<break time=\"2s\"/>";
-        
+    }
+    
+    if (chordData.fingers[2] > 0) {
         audioOutput = audioOutput + "Finally, your ring finger will be on string " + chordData.fingers[2] +
             " pressing down on fret " + chordData.strings[chordData.fingers[2] - 1] + ". ";
         audioOutput = audioOutput + "<break time=\"2s\"/>";
+    }
         
         audioOutput = audioOutput + "Now go ahead and play the chord " + chordData.chordDesc + ". ";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
@@ -787,8 +949,6 @@ function playChord(chord, intent, session, callback) {
 
     var musicLib = "https://s3.amazonaws.com/musicmakerskill/guitar/Chord";
 
-    //    {"chordName":"C-Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5]},
-
     // now create the response by assembling the information in correct SSML format
     var audioOutput = "<speak>";
         audioOutput = audioOutput + "Playing " + intent.slots.Chord.value + ". ";
@@ -893,4 +1053,3 @@ function buildResponse(sessionAttributes, speechletResponse) {
         response: speechletResponse
     };
 }
-
