@@ -3,11 +3,10 @@
  */
 
 var aws = require('aws-sdk');
+var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
 
 // this is used by the VoiceLabs analytics
-var APP_ID = 'amzn1.ask.skill.ed108ca5-b703-4b4c-9d89-ace3517c2fa9';
 var VoiceInsights =require('voice-insights-sdk'),
-  VI_APP_TOKEN = '7bdd2730-e1da-11a6-3a6b-0eb19d13e26e';
 
 // six string guitar notes
 var fretboard = {
@@ -18,6 +17,18 @@ var fretboard = {
     "string5":["a2","a2sharp","b2","c2","c2sharp","d2","d2sharp","e2","f3","f3sharp","g2","g2sharp"],
     "string6":["e1","f1","f1sharp","g1","g1sharp","a2","a2sharp","b2","c2","c2sharp","d2","d2sharp"]
 };
+
+// chord translation
+var chords = [
+    {"chordName":"cmajor","chordDesc":"C Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5]},
+    {"chordName":"amajor","chordDesc":"A Major","strings":[0,1,1,1,0,-1],"fingers":[4,3,2]},
+    {"chordName":"gmajor","chordDesc":"G Major","strings":[3,0,0,0,2,1],"fingers":[5,6,1]},
+    {"chordName":"emajor","chordDesc":"E Major","strings":[0,0,1,2,2,0],"fingers":[3,5,4]},
+    {"chordName":"dmajor","chordDesc":"D Major","strings":[2,3,2,0,-1,-1],"fingers":[3,1,2]},
+    {"chordName":"aminor","chordDesc":"A Minor","strings":[0,1,2,2,0,-1],"fingers":[2,4,3]},
+    {"chordName":"eminor","chordDesc":"E Minor","strings":[0,0,0,2,2,0],"fingers":[0,5,4]},
+    {"chordName":"dminor","chordDesc":"D Minor","strings":[1,3,2,0,-1,-1],"fingers":[1,3,2]}
+];
 
 // this is the song catalog, including different variations on how someone may request it
 
@@ -37,7 +48,7 @@ exports.handler = function (event, context) {
         /**
          * This validates that the applicationId matches what is provided by Amazon.
          */
-        if (event.session.application.applicationId !== "amzn1.ask.skill.ed108ca5-b703-4b4c-9d89-ace3517c2fa9") {
+        if (event.session.application.applicationId !== "amzn1.ask.skill.6e5055b7-6b7f-41ce-a4fe-08b186412edc") {
              context.fail("Invalid Application ID");
         }
 
@@ -102,6 +113,18 @@ function onIntent(intentRequest, session, callback) {
 
     if ("PlayNote" === intentName || "PlayFlat" === intentName || "PlaySharp" === intentName) {
         playNote(intent, session, callback);
+    } else if ("TeachNote" === intentName) {
+        teachNote(session, callback);
+    } else if ("TeachChord" === intentName) {
+        teachChord(session, callback);
+    } else if ("HowChord" === intentName) {
+        teachIndivChord(intent, session, callback);
+    } else if ("TeachSong" === intentName) {
+        teachSong(intent, session, callback);
+    } else if ("PlayGuitar" === intentName) {
+        playGuitar(intent, session, callback);
+    } else if ("PlayChord" === intentName) {
+        chordRequest(intent, session, callback);
     } else if ("Replay" === intentName || "AMAZON.RepeatIntent" === intentName) {
         replayPriorNotes(intent, session, callback);
     } else if ("AMAZON.StartOverIntent" === intentName) {
@@ -133,7 +156,7 @@ function onSessionEnded(sessionEndedRequest, session) {
 function getWelcomeResponse(session, callback) {
     var sessionAttributes = {};
     var shouldEndSession = false;
-    var cardTitle = "Welcome to Guitar Player";
+    var cardTitle = "Welcome to Guitar Teacher";
 
     console.log("Welcome Message Invoked");
 
@@ -144,23 +167,224 @@ function getWelcomeResponse(session, callback) {
     // this incrementally constructs the SSML message combining voice in text into the same output stream
     
     var audioOutput = "<speak>";
-        audioOutput = audioOutput +  "Welcome to Guitar Player.";
+        audioOutput = audioOutput +  "Welcome to Guitar Teacher.";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/homeOnTheRange.mp3\" />";
-        audioOutput = audioOutput + "Your tool for learning how to play a 12-string guitar. " + 
-            "To get started, you can say play D.";
+        audioOutput = audioOutput + "Your tool for learning how to play the guitar. " + 
+            "To get started, you can say Teach Notes, Teach Chords, Teach Music, or Play Guitar. " +
+            "If you want more detailed instructions, say Help.";
         audioOutput = audioOutput + "</speak>";
 
-    var cardOutput = "Welcome to Music Maker. Your tool for playing music based on phrases " +
-        "and commands given through Alexa.";
+    var cardOutput = "Welcome to Guitar Teacher\n" +
+        "Say Teach Notes to get instruction on picking individual notes on a guitar.\n" +
+        "Say Teach Chords to get instruction on strumming basic guitar chords.\n" +
+        "Say Teach Songs to get lessons on how to play different classic songs.\n" +
+        "Say Play Guitar to instruct Alexa to play back notes or chords.";
 
-    var repromptText = "Please start by giving the letter for a note based on the key. " +
-        "For example, say something like the letter D and we will play back that note.";
+    var repromptText = "Please start by saying something like Play Guitar";
 
 	VoiceInsights.track('WelcomeMessage', null, null, (err, res) => {
 	    console.log('voice insights logged' + JSON.stringify(res));
 
         callback(sessionAttributes,
             buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
+    });
+}
+
+// this is the function that gets called to format the response to the user when they first boot the app
+
+function teachNote(session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var cardTitle = "Welcome to Guitar Teacher";
+
+    console.log("Teach Note Invoked");
+
+    // initialize voice analytics 
+    console.log("initialize session");
+    VoiceInsights.initialize(session, VI_APP_TOKEN);
+
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput +  "Guitar Teacher can help you learn individual notes on the guitar. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/openNeck.mp3\" />";
+        audioOutput = audioOutput + "Let's get started on how the scale works. What you just heard are all six " +
+            "strings being played without any fingers on the neck of the guitar. Each string has its own note " +
+            "and there are twelve different notes on the scale. ";
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "How to play individual notes\n";
+
+    var repromptText = "Please start by saying something like Where is E and I will walk you through how to find it.";
+
+	VoiceInsights.track('TeachNote', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
+    });
+}
+
+// this is the function that gets called to format the response to the user when they first boot the app
+
+function teachChord(session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var cardTitle = "Chord Instruction";
+
+    console.log("Teach Chord Invoked");
+
+    // initialize voice analytics 
+    console.log("initialize session");
+    VoiceInsights.initialize(session, VI_APP_TOKEN);
+
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput +  "Guitar Teacher can help you learn how to play chords on the guitar. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/Chordcmajor.mp3\" />";
+        audioOutput = audioOutput + "Let's get started on how chords work. What you just heard is a very basic " +
+            "chord called C Major. It's played by pressing three fingers on different strings, then strumming all " +
+            "all six strings across the guitar. The difference between the chords are all about finger placement " +
+            "on the frets. Each fret plays a different note, so by positioning your fingers on different ones, " +
+            "a different set of notes will be played. If you're ready to get started, say something like " +
+            "Teach me how to play C Major, and I will walk you through the finger placement and play what the chord " +
+            "should sound like. ";
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "How to play chords\n";
+
+    var repromptText = "Please start by saying something like Teach me how to play C Major " +
+        "and I will walk you through the finger positions to play them.";
+
+	VoiceInsights.track('TeachChord', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioCardResponse(cardTitle, audioOutput, cardOutput, "Chordcmajor", repromptText, shouldEndSession));
+    });
+}
+
+// this is the function that gets called to format the response to the user when they first boot the app
+
+function teachIndivChord(intent, session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var cardTitle = "Chord Instruction";
+
+    console.log("Teach Individual Chord Invoked");
+
+    // initialize voice analytics 
+    console.log("initialize session");
+    VoiceInsights.initialize(session, VI_APP_TOKEN);
+
+    console.log("Play Note invoked: " + intent.slots.Chord.value);
+
+    // if a chord is passed, scrub it from all invalid characters
+    if (intent.slots.Chord.value) {
+        var scrubChord = "" + intent.slots.Chord.value.toLowerCase();
+        var chordRequest = "";
+        for (i = 0; i < scrubChord.length; i++ ) {
+            //console.log(scrubChord[i]);
+            if (scrubChord[i] === " ") {
+                console.log("removed space");
+            } else if (scrubChord[i] === ".") {
+                console.log("removed dot");
+            } else {
+                chordRequest = chordRequest + scrubChord[i];
+            }
+        }
+    } else {
+        var cardTitle = "Missing Musical Chord";
+        var speechOutput = "I'm sorry, you didn't provide a chord.  If you'd like to try again, please say " +
+            "the name of a musical chord now. For example, say Teach me how to play C Major.";
+        var repromptText = "If you would like to continue to use the skill, please say a musical chord now.";
+
+        callback({}, buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+    }
+
+    // validate that the chord exists
+    var validChord = false;
+    var chordData = {};
+    console.log("user provided:" + chordRequest);
+
+    for (i = 0; i < chords.length; i++) {
+        //console.log("check: " + chords[i].chordName)
+        if (chordRequest === chords[i].chordName) {
+            validChord = true;
+            chordData = chords[i];
+            console.log("we have a match");
+        }
+    }
+    
+    // final check - if the chord is valid, pass to the function to pass back result. else error handling
+    if (validChord) {
+        outputIndivChord(chordData, intent, session, callback)
+    } else {
+	    VoiceInsights.track('ErrorInvalidChord', null, null, (err, res) => {
+	        console.log('voice insights logged' + JSON.stringify(res));
+
+            callback(sessionAttributes,
+                buildAudioCardResponse(cardTitle, audioOutput, cardOutput, objectOutput, repromptText, shouldEndSession));
+        });        
+    }
+}
+
+// this is the function that gets called to format the response to the user when they first boot the app
+
+function outputIndivChord(chordData, intent, session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var cardTitle = "Chord Instruction";
+
+    console.log("chordData: " + JSON.stringify(chordData));
+    //{"chordName":"cmajor","chordDesc":"C Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5]}
+
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput +  "Okay, let's get started on how to play the chord " + chordData.chordDesc + ". ";
+        audioOutput = audioOutput + "<audio src=\"" + noteLib + "Chord" + chordData.chordName + ".mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+
+        audioOutput = audioOutput + "Here are the finger positions. Your index finger will be on string " + 
+            chordData.fingers[0] + " pressing down on fret " + chordData.strings[chordData.fingers[0] - 1] + ". ";
+        audioOutput = audioOutput + "<break time=\"2s\"/>";
+        
+        audioOutput = audioOutput + "Your middle finger will be on string " + chordData.fingers[1] +
+            " pressing down on fret " + chordData.strings[chordData.fingers[1] - 1] + ". ";
+        audioOutput = audioOutput + "<break time=\"2s\"/>";
+        
+        audioOutput = audioOutput + "Finally, your ring finger will be on string " + chordData.fingers[2] +
+            " pressing down on fret " + chordData.strings[chordData.fingers[2] - 1] + ". ";
+        audioOutput = audioOutput + "<break time=\"2s\"/>";
+        
+        audioOutput = audioOutput + "Now go ahead and play the chord " + chordData.chordDesc + ". ";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "<audio src=\"" + noteLib + "Chord" + chordData.chordName + ".mp3\" />";
+
+        audioOutput = audioOutput + "One more time. ";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "<audio src=\"" + noteLib + "Chord" + chordData.chordName + ".mp3\" />";
+
+        audioOutput = audioOutput + "<break time=\"2s\"/>";
+        audioOutput = audioOutput + "If you're ready for another chord to learn, please ask for it now.";
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "How to play " + chordData.chordDesc;
+    var objectOutput = "Chord" + chordData.chordName;
+
+    var repromptText = "Please start by saying something like Teach me how to play C Major " +
+        "and I will walk you through the finger positions to play them.";
+
+	VoiceInsights.track('TeachIndivChord', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioCardResponse(cardTitle, audioOutput, cardOutput, objectOutput, repromptText, shouldEndSession));
     });
 }
 
@@ -181,7 +405,6 @@ function replayPriorNotes(intent, session, callback) {
             buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
     } else {
         // the playback last five notes
-        var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
         var notePlayback = 0;
         var maxPlayback = 5;
         
@@ -240,7 +463,7 @@ function getHelpResponse(callback) {
 
     console.log("Help Message Invoked");
 
-    var speechOutput = "Guitar Player is an interactive tool showing off how Alexa can interpret " +
+    var speechOutput = "Guitar Teacher is an interactive tool showing off how Alexa can interpret " +
         "voice commands and play musical notes based on the requests. The notes played for this " +
         "are through the C major scale. For the top of the octave, please say High C.";
         
@@ -469,6 +692,129 @@ function playNote(intent, session, callback) {
     }    
 }
 
+// This processes the logic when a chord is requested. If successful, it hands off to another function
+
+function chordRequest(intent, session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var noteHistory = [];
+    var increaseOctave = false;
+    var chordRequest = "";
+    var chordDesc = "";
+
+    // this is needed for testing
+    console.log("initialize VL token");
+    VoiceInsights.initialize(session, VI_APP_TOKEN);
+
+    // check if notes have been played before and are saved into the session. If so, load into local array
+    if (session.attributes == null || session.attributes.noteHistory == null) {
+        console.log("no prior history");
+    } else {
+        console.log("prior history: " + JSON.stringify(session.attributes.noteHistory));
+        noteHistory = session.attributes.noteHistory;
+        sessionAttributes.noteHistory = session.attributes.noteHistory;
+    }
+
+    console.log("Play Chord invoked: " + intent.slots.Chord.value);
+
+    // if a chord value is passed, scrub it from all invalid characters. If no chord provided, pass back error
+    if (intent.slots.Chord.value) {
+        var scrubChord = "" + intent.slots.Chord.value.toLowerCase();
+        for (i = 0; i < scrubChord.length; i++ ) {
+            //console.log(scrubChord[i]);
+            if (scrubChord[i] === " ") {
+                console.log("removed space");
+            } else if (scrubChord[i] === ".") {
+                console.log("removed dot");
+            } else {
+                chordRequest = chordRequest + scrubChord[i];
+            }
+        }
+    } else {
+        var cardTitle = "Missing Musical Chord";
+        var speechOutput = "I'm sorry, you didn't provide a chord.  If you'd like to try again, please say " +
+            "the name of a musical chord now.";
+        var repromptText = "If you would like to continue to use the skill, please say a musical chord now.";
+
+        VoiceInsights.track('NoChordRequest', null, null, (err, res) => {
+            console.log("No musical chord provided");
+            callback({}, buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+        });
+    }
+
+    // validate that the chord exists
+    var validChord = false;
+    console.log("user provided:" + chordRequest);
+
+    for (i = 0; i < chords.length; i++) {
+        console.log("check: " + chords[i].chordName)
+        if (chordRequest === chords[i].chordName) {
+            validChord = true;
+            console.log("we have a match");
+        }
+    }
+    
+    // final check - if the chord is valid, pass to the function to pass back result. else error handling
+    if (validChord) {
+        playChord(chordRequest, intent, session, callback)
+    } else {
+
+        console.log("Not a valid chord");
+        var speechOutput = "Sorry, please tell me a valid chord that you would like me to play. For example " +
+            "say something like Play C Major";
+        var repromptText = "If you would like to continue to use the skill, please say another musical note now.";
+
+        // we don't want to lose the session history even though the last note was invalid
+        sessionAttributes.noteHistory = noteHistory;
+
+        VoiceInsights.track('InvalidChordRequest', null, null, (err, res) => {
+            callback({}, 
+                buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+        });
+    }    
+}
+
+// This generates a user response back when a valid chord is provided, so the SSML gets generated
+
+function playChord(chord, intent, session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+
+    console.log("Processing Chord Response for " + chord);
+    console.log("intent: " + JSON.stringify(intent));
+
+    var cardTitle = "Play Chord";
+
+    var musicLib = "https://s3.amazonaws.com/musicmakerskill/guitar/Chord";
+
+    //    {"chordName":"C-Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5]},
+
+    // now create the response by assembling the information in correct SSML format
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput + "Playing " + intent.slots.Chord.value + ". ";
+        audioOutupt = audioOutput + "<break time=\"1s\"/";
+        audioOutput = audioOutput + "<audio src=\"" + musicLib + chord + ".mp3\" />";
+
+        //audioOutput = audioOutput + "<break time=\"1s\"/>Ready for another note? Just request the next one now.";
+        audioOutput = audioOutput + "</speak>";
+
+    // save the note History for the session to be used later
+    //sessionAttributes.noteHistory = noteHistory;
+
+    var cardOutput = "Playing: " + intent.slots.Chord.value;
+    var displayObject = "Chord" + chord;
+
+    var repromptText = "If you are ready to play another note, please say so now by indicating the letter " +
+        "representing the note.";
+
+    VoiceInsights.track('PlayChord', intent.slots, null, (err, res) => {
+        console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioCardResponse(cardTitle, audioOutput, cardOutput, displayObject, repromptText, shouldEndSession));
+    });
+}
+
 // --------------- Helpers that build all of the responses -----------------------
 
 function buildSpeechletResponse(title, output, cardInfo, repromptText, shouldEndSession) {
@@ -514,8 +860,8 @@ function buildAudioResponse(title, output, cardInfo, repromptText, shouldEndSess
 }
 
 function buildAudioCardResponse(title, output, cardInfo, objectName, repromptText, shouldEndSession) {
-    var smallImagePath = "https://s3.amazonaws.com/musicmakerskill/small-images/" + objectName + "-small.PNG";
-    var largeImagePath = "https://s3.amazonaws.com/musicmakerskill/large-images/" + objectName + "-large.PNG";
+    var smallImagePath = noteLib + "small-images/" + objectName + "-small.PNG";
+    var largeImagePath = noteLib + "large-images/" + objectName + "-large.PNG";
     return {
         outputSpeech: {
             type: "SSML",
