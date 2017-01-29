@@ -8,7 +8,7 @@ var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
 // this is used by the VoiceLabs analytics
 var APP_ID =
 var VoiceInsights =require('voice-insights-sdk'),
-  VI_APP_TOKEN = 
+  VI_APP_TOKEN =
 
 // six string guitar notes
 var fretboard = {
@@ -39,6 +39,48 @@ var songsAvailable = [
     {"requestName":"yellow rose of texas", "songName":"Twinkle Twinkle Little Star", "songID":0},
     {"requestName":"happy birthday", "songName":"Happy Birthday", "songID":1},
     {"requestName":"amazing grace", "songName":"Jingle Bells", "songID":2}
+];
+
+var songData = [
+    {
+        "songID":0,
+        "numSections": 1,
+        "clipDivide":[4],
+        "notes":[
+            "D, D, G, A, B",
+            "A, G, E, C, C, C",
+            "C, C, D, G, G",
+            "G, F Sharp, G, A",
+            "D, D, G, A, B",
+            "A, G, E, C, C, C",
+            "C, C, B, A, G",
+            "F Sharp, G, A, G"
+        ],
+        "soundClips":[
+            "home_pt1.mp3",
+            "home_pt2.mp3",
+            "home_pt3.mp3",
+            "home_pt4.mp3",
+            "home_pt1.mp3",
+            "home_pt2.mp3",
+            "home_pt5.mp3",
+            "home_pt6.mp3"
+        ],
+        "userPause":[
+            "8s","8s","8s","8s",
+            "8s","8s","8s","8s"
+        ],
+        "extraComments":[
+            "The first part starts with the following series of notes ",
+            "Now lets move up the scale in the next part. The notes are ",
+            "Followed by a part playing notes ",
+            "Then ending the first have with notes ",
+            "Now repeat the beginning with notes ",
+            "Followed by a repeat of the notes ",
+            "Now change the next part playing notes ",
+            "Then ending with the notes "
+        ]
+    }
 ];
 
 // Route the incoming request based on type (LaunchRequest, IntentRequest,
@@ -132,13 +174,17 @@ function onIntent(intentRequest, session, callback) {
     } else if ("HowChord" === intentName) {
         teachIndivChord(intent, session, callback);
     } else if ("TeachSong" === intentName) {
-        teachSong(intent, session, callback);
+        teachSong(session, callback);
     } else if ("PlayGuitar" === intentName) {
-        playGuitar(intent, session, callback);
+        playGuitar(session, callback);
     } else if ("PlayChord" === intentName) {
         chordRequest(intent, session, callback);
     } else if ("Replay" === intentName || "AMAZON.RepeatIntent" === intentName) {
         replayPriorNotes(intent, session, callback);
+    } else if ("GuitarTuner" === intentName) {
+        tuneGuitar(intent, session, callback);
+    } else if ("NextString" === intentName || "RepeatString" === intentName) {
+        tuneGuitar(intent, session, callback);
     } else if ("AMAZON.StartOverIntent" === intentName) {
         getWelcomeResponse(session, callback);
     } else if ("AMAZON.HelpIntent" === intentName) {
@@ -195,6 +241,49 @@ function getWelcomeResponse(session, callback) {
     var repromptText = "Please start by saying something like Play Guitar";
 
 	VoiceInsights.track('WelcomeMessage', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
+    });
+}
+
+// this provides an overview of how to play notes and chords from the skill
+
+function playGuitar(session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var cardTitle = "Playing Guitar from your Alexa";
+
+    console.log("Play Guitar Invoked");
+
+    // initialize voice analytics 
+    console.log("initialize session");
+    VoiceInsights.initialize(session, VI_APP_TOKEN);
+
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput + "You can play both strings and chords using this skill. ";
+
+        audioOutput = audioOutput + "If you want to play an individual note, just say something like " +
+            "Play E and the specific note will be played through the skill like this. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/e3.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        
+        audioOutput = audioOutput + "If you want to play a chord, say something like Play C Major and the " +
+            "chord will be played like this.";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/Chordcmajor.mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "Play Guitar\n" +
+        "For notes, say the letter between A-G including sharps and flats.\n" +
+        "Available chords\nMajor C, A, G, E and D. \nMinor A, E, D.\n";
+
+    var repromptText = "Please start by saying something like Play E";
+
+	VoiceInsights.track('PlayGuitar', null, null, (err, res) => {
 	    console.log('voice insights logged' + JSON.stringify(res));
 
         callback(sessionAttributes,
@@ -615,6 +704,107 @@ function replayPriorNotes(intent, session, callback) {
                 buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
         });
     }
+}
+
+// this describes what songs are available for playback
+
+function teachSong(session, callback) {
+    var sessionAttributes = {};
+    var shouldEndSession = false;
+    var cardTitle = "Song Instruction";
+
+    console.log("Teach Song Invoked");
+
+    // initialize voice analytics 
+    console.log("initialize session");
+    VoiceInsights.initialize(session, VI_APP_TOKEN);
+
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput + "Guitar Teacher can teach you how to play a basic song. ";
+        audioOutput = audioOutput + "Choose from the following options by saying Teach me Home on the Range. ";
+        audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/homeOnTheRange.mp3\" />";
+        audioOutput = audioOutput + "The Yellow Rose of Texas. ";
+        audioOutput = audioOutput + "Happy Birthday Song. ";
+        audioOutput = audioOutput + "Amazing Grace. ";
+
+        audioOutput = audioOutput + "</speak>";
+
+    var cardOutput = "How to play chords\n";
+
+    var repromptText = "Please start by requesting a song, saying something like Teach me how to play Amazing Grace " +
+        "and I will walk you through the individual notes to play them.";
+
+	VoiceInsights.track('TeachSong', null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
+    });
+}
+
+// this is the function that gets called to tune the guitar
+
+function tuneGuitar(intent, session, callback) {
+    var cardTitle = "Tune Guitar";
+    var tuneString = 0;
+
+    console.log("Tune Guitar Invoked via " + intent.name);
+    console.log("session: " + JSON.stringify(session));
+    
+    // if this is not the first time through, retrieve from saved session
+    if (session.attributes == null || session.attributes.string) {
+        tuneString = session.attributes.string;
+    } else {
+        tuneString = 1;
+    }
+    
+    // set the string name based on which intent invoked the function
+    if ("GuitarTuner" === intent.name) {
+        tuneString = 1;
+    } else if ("NextString" === intent.name) {
+        tuneString = tuneString + 1;
+        console.log("increment string");
+    } else if ("RepeatString" === intent.name ) {
+        console.log("repeating string");
+    } else {
+        tuneString = 1;
+    }
+    
+    // this incrementally constructs the SSML message combining voice in text into the same output stream
+    console.log("building SSML");
+
+    //var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
+    
+    var audioOutput = "<speak>";
+        audioOutput = audioOutput + "Now tuning string " + tuneString + ". ";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "<audio src=\"" + noteLib + "tuner/string" + tuneString + ".mp3\" />";
+        audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "Please say Repeat String or Next String";
+        audioOutput = audioOutput + "</speak>";
+
+    // if the user still does not respond, they will be prompted with this additional information
+
+    var cardOutput = "Tuning String " + tuneString;
+
+    var repromptText = "If you are ready to go to the next string, please say Next String.";
+        
+    var shouldEndSession = false;
+
+    var sessionAttributes = {};
+        sessionAttributes.string = tuneString;
+        sessionAttributes.intent = "TuneGuitar";
+
+	VoiceInsights.track(intent.name, null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
+    });
+    
 }
 
 // this is the function that gets called to format the response to the user when they ask for help
