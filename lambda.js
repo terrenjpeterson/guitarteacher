@@ -6,9 +6,9 @@ var aws = require('aws-sdk');
 var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
 
 // this is used by the VoiceLabs analytics
-var APP_ID =
+var APP_ID = 'amzn1.ask.skill.6e5055b7-6b7f-41ce-a4fe-08b186412edc';
 var VoiceInsights =require('voice-insights-sdk'),
-  VI_APP_TOKEN =
+  VI_APP_TOKEN = '7bdd2730-e1da-11a6-3a6b-0eb19d13e26e';
 
 // six string guitar notes
 var fretboard = {
@@ -188,7 +188,7 @@ function onIntent(intentRequest, session, callback) {
     } else if ("AMAZON.StartOverIntent" === intentName) {
         getWelcomeResponse(session, callback);
     } else if ("AMAZON.HelpIntent" === intentName) {
-        getHelpResponse(callback);
+        getHelpResponse(session, callback);
     } else if ("AMAZON.RepeatIntent" === intentName) {
         getWelcomeResponse(session, callback);
     } else if ("AMAZON.StopIntent" === intentName || "AMAZON.CancelIntent" === intentName) {
@@ -228,15 +228,16 @@ function getWelcomeResponse(session, callback) {
         audioOutput = audioOutput +  "Welcome to Guitar Teacher.";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/homeOnTheRange.mp3\" />";
         audioOutput = audioOutput + "Your tool for learning how to play the guitar. " + 
-            "To get started, you can say Teach Notes, Teach Chords, Teach Music, or Play Guitar. " +
+            "To get started, you can say Teach Notes, Teach Chords, Play Guitar, or Tune Guitar. " +
             "If you want more detailed instructions, say Help.";
         audioOutput = audioOutput + "</speak>";
 
     var cardOutput = "Welcome to Guitar Teacher\n" +
         "Say Teach Notes to get instruction on picking individual notes on a guitar.\n" +
         "Say Teach Chords to get instruction on strumming basic guitar chords.\n" +
-        "Say Teach Songs to get lessons on how to play different classic songs.\n" +
-        "Say Play Guitar to instruct Alexa to play back notes or chords.";
+    //    "Say Teach Songs to get lessons on how to play different classic songs.\n" +
+        "Say Play Guitar to instruct Alexa to play back notes or chords.\n" +
+        "Say Tune Guitar to instruct Alexa to play each basic note on the guitar.";
 
     var repromptText = "Please start by saying something like Play Guitar";
 
@@ -256,10 +257,6 @@ function playGuitar(session, callback) {
     var cardTitle = "Playing Guitar from your Alexa";
 
     console.log("Play Guitar Invoked");
-
-    // initialize voice analytics 
-    console.log("initialize session");
-    VoiceInsights.initialize(session, VI_APP_TOKEN);
 
     // this incrementally constructs the SSML message combining voice in text into the same output stream
     
@@ -298,10 +295,6 @@ function teachNote(session, callback) {
     var cardTitle = "Note Instruction";
 
     console.log("Teach Note Invoked");
-
-    // initialize voice analytics 
-    console.log("initialize session");
-    VoiceInsights.initialize(session, VI_APP_TOKEN);
 
     // this incrementally constructs the SSML message combining voice in text into the same output stream
     console.log("building SSML");
@@ -479,10 +472,6 @@ function teachChord(session, callback) {
 
     console.log("Teach Chord Invoked");
 
-    // initialize voice analytics 
-    console.log("initialize session");
-    VoiceInsights.initialize(session, VI_APP_TOKEN);
-
     // this incrementally constructs the SSML message combining voice in text into the same output stream
     console.log("building SSML");
     
@@ -520,12 +509,6 @@ function teachIndivChord(intent, session, callback) {
 
     console.log("Teach Individual Chord Invoked");
 
-    // initialize voice analytics 
-    console.log("initialize session");
-    VoiceInsights.initialize(session, VI_APP_TOKEN);
-
-    console.log("Play Note invoked: " + intent.slots.Chord.value);
-
     // if a chord is passed, scrub it from all invalid characters
     if (intent.slots.Chord.value) {
         var scrubChord = "" + intent.slots.Chord.value.toLowerCase();
@@ -546,7 +529,10 @@ function teachIndivChord(intent, session, callback) {
             "the name of a musical chord now. For example, say Teach me how to play C Major.";
         var repromptText = "If you would like to continue to use the skill, please say a musical chord now.";
 
-        callback({}, buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+        VoiceInsights.track('ErrorMissingChord', null, null, (err, res) => {
+	        console.log('voice insights logged' + JSON.stringify(res));
+            callback({}, buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+        });
     }
 
     // validate that the chord exists
@@ -582,9 +568,6 @@ function outputIndivChord(chordData, intent, session, callback) {
     var sessionAttributes = {};
     var shouldEndSession = false;
     var cardTitle = "Chord Instruction";
-
-    console.log("chordData: " + JSON.stringify(chordData));
-    //{"chordName":"cmajor","chordDesc":"C Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5]}
 
     // this incrementally constructs the SSML message combining voice in text into the same output stream
     console.log("building SSML");
@@ -715,10 +698,6 @@ function teachSong(session, callback) {
 
     console.log("Teach Song Invoked");
 
-    // initialize voice analytics 
-    console.log("initialize session");
-    VoiceInsights.initialize(session, VI_APP_TOKEN);
-
     // this incrementally constructs the SSML message combining voice in text into the same output stream
     console.log("building SSML");
     
@@ -755,10 +734,16 @@ function tuneGuitar(intent, session, callback) {
     console.log("session: " + JSON.stringify(session));
     
     // if this is not the first time through, retrieve from saved session
-    if (session.attributes == null || session.attributes.string) {
-        tuneString = session.attributes.string;
-    } else {
+    if (session.attributes == null || session.attributes.string == null) {
         tuneString = 1;
+        console.log("new session");
+    } else {
+        tuneString = session.attributes.string;
+        console.log("prior session. retrieved string " + tuneString);
+        // check if we've gone through all of the strings and need to start again from the beginning
+        if (tuneString == 6) {
+            tuneString = 1;
+        }
     }
     
     // set the string name based on which intent invoked the function
@@ -783,7 +768,12 @@ function tuneGuitar(intent, session, callback) {
         audioOutput = audioOutput + "<break time=\"1s\"/>";
         audioOutput = audioOutput + "<audio src=\"" + noteLib + "tuner/string" + tuneString + ".mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
-        audioOutput = audioOutput + "Please say Repeat String or Next String";
+
+    if (tuneString < 6) {
+        audioOutput = audioOutput + "Please say Repeat String or Next String.";
+    } else {
+        audioOutput = audioOutput + "Please say Repeat String, or Next String if you want to go back to string 1.";
+    }
         audioOutput = audioOutput + "</speak>";
 
     // if the user still does not respond, they will be prompted with this additional information
@@ -808,26 +798,51 @@ function tuneGuitar(intent, session, callback) {
 }
 
 // this is the function that gets called to format the response to the user when they ask for help
-function getHelpResponse(callback) {
+function getHelpResponse(session, callback) {
     var sessionAttributes = {};
-    var cardTitle = "Help";
-    // this will be what the user hears after asking for help
+    var cardTitle = "Guitar Teacher Help";
 
     console.log("Help Message Invoked");
 
-    var speechOutput = "Guitar Teacher is an interactive tool showing off how Alexa can interpret " +
-        "voice commands and play musical notes based on the requests. The notes played for this " +
-        "are through the C major scale. For the top of the octave, please say High C.";
+    // this is what shows up as text instructions on the mobile app that accompanies the skill
+    var cardOutput = "Guitar Teacher Features\n";
+        cardOutput = cardOutput + "Teach Notes - Learn how to play individual notes on a guitar. " +
+            "This technique is also called picking, and requires understanding how to find each note on the guitar, " +
+            "then playing it based on placement of your fingers.\n";
+        cardOutput = cardOutput + "Teach Chords - Learn how to play multiple notes at once. " +
+            "These are called chords, and the technique is sometimes referred to as strumming the guitar. " +
+            "The focus is around finger placement, and how to recognize the different names.\n"
+        //cardOutput = cardOutput + "Teach Music is a feature that "
+        cardOutput = cardOutput + "Play Guitar - Alexa will playback individual notes or chords based on your requests.\n";
+
+    // this is the verbiage that Alexa speaks. Some background is given on each main feature of the app.
+    var speechOutput = "Guitar Teacher is an interactive tool where Alexa can be your private instructor. ";
+        speechOutput = speechOutput + "Teach Notes is a feature that enables how to play individual notes on a guitar. " +
+            "This technique is also called picking, and requires understanding how to find each note on the instrument, " +
+            "then playing it based on placement of an individual finger pressing down on a string. ";
+        speechOutput = speechOutput + "Teach Chords is a feature that enables how to play multiple notes at once. " +
+            "These are called chords, and the technique is sometimes referred to as strumming the guitar. " +
+            "The focus is placing multiple fingers on different strings, and how to recognize the different names. "
+        //speechOutput = speechOutput + "Teach Music is a feature that walks through the steps to play a song. ";
+        speechOutput = speechOutput + "Play Guitar is a feature that enables Alexa to playback individual notes " +
+            "or chords through your device based on voice requests. ";
+        speechOutput = speechOutput + "Tune Guitar is a feature that walks through the steps to tune each of the six " +
+            "strings on your guitar. ";
+        speechOutput = speechOutput + "To get started, say one of the following. Teach Notes, Teach Chords, Play Guitar, Tune Guitar.";
         
     // if the user still does not respond, they will be prompted with this additional information
 
-    var repromptText = "Please tell me a letter and I will play back that note. For example, " +
-        "say just the letter F.";
+    var repromptText = "To get started, please say something like Teach Notes and I will walk you through " +
+        "the steps to get started.";
         
     var shouldEndSession = false;
 
-    callback(sessionAttributes,
-        buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+	VoiceInsights.track("Help", null, null, (err, res) => {
+	    console.log('voice insights logged' + JSON.stringify(res));
+
+        callback(sessionAttributes,
+            buildSpeechletResponse(cardTitle, speechOutput, cardOutput, repromptText, shouldEndSession));
+	});
 }
 
 // this is the function that gets called to format the response when the user is done
@@ -839,7 +854,6 @@ function handleSessionEndRequest(callback) {
     // Setting this to true ends the session and exits the skill.
     var shouldEndSession = true;
 
-    // temp code to test analytics
     VoiceInsights.track('EndSession', null, null, (err, res) => {
         console.log('voice insights logged' + JSON.stringify(res));
 
@@ -1039,8 +1053,12 @@ function playNote(intent, session, callback) {
         // we don't want to lose the session history even though the last note was invalid
         sessionAttributes.noteHistory = noteHistory;
 
-        callback({}, 
-            buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+        VoiceInsights.track('PlayNote', null, null, (err, res) => {
+            console.log('voice insights logged' + JSON.stringify(res));
+
+            callback({}, 
+                buildSpeechletResponse(cardTitle, speechOutput, speechOutput, repromptText, shouldEndSession));
+        });
     }    
 }
 
@@ -1053,10 +1071,6 @@ function chordRequest(intent, session, callback) {
     var increaseOctave = false;
     var chordRequest = "";
     var chordDesc = "";
-
-    // this is needed for testing
-    console.log("initialize VL token");
-    VoiceInsights.initialize(session, VI_APP_TOKEN);
 
     // check if notes have been played before and are saved into the session. If so, load into local array
     if (session.attributes == null || session.attributes.noteHistory == null) {
@@ -1133,7 +1147,6 @@ function playChord(chord, intent, session, callback) {
     var shouldEndSession = false;
 
     console.log("Processing Chord Response for " + chord);
-    console.log("intent: " + JSON.stringify(intent));
 
     var cardTitle = "Play Chord";
 
