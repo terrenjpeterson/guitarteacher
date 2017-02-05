@@ -1,0 +1,1 @@
+This skill teaches a student how to play a guitar.  There are a few different options with it. Say Teach Notes, Teach Chords, Play Guitar, or Tune Guitar for details. Please note, if trying the flat/sharp keys, please remember that not all A-G are valid for them.  For example, C flat, F flat, B sharp, E sharp are not valid notes, so an error message will be given. 

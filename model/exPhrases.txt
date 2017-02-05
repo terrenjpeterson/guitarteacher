@@ -1,3 +1,3 @@
 Alexa, open guitar teacher
-Alexa, ask guitar teacher to Play D
-Alexa, ask guitar teacher to Replay Notes
+Alexa, ask guitar teacher to teach chords
+Alexa, ask guitar teacher to tune my guitar

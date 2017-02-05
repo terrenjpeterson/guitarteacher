@@ -1,0 +1,8 @@
+C Major
+A Major
+G Major
+E Major
+D Major
+A Minor
+E Minor
+D Minor

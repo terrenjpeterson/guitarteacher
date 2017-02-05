@@ -1,8 +1,26 @@
 {
   "intents": [
     {
+      "intent": "PlayChord",
+                "slots": [
+        {
+          "name": "Chord",
+          "type": "LIST_OF_CHORDS"
+        }
+      ]
+    },
+    {
+      "intent": "HowChord",
+                "slots": [
+        {
+          "name": "Chord",
+          "type": "LIST_OF_CHORDS"
+        }
+      ]
+    },
+    {
       "intent": "PlayNote",
-		"slots": [
+                "slots": [
         {
           "name": "Note",
           "type": "LIST_OF_NOTES"
@@ -11,7 +29,7 @@
     },
     {
       "intent": "PlayFlat",
-		"slots": [
+                "slots": [
         {
           "name": "Note",
           "type": "LIST_OF_NOTES"
@@ -20,12 +38,33 @@
     },
     {
       "intent": "PlaySharp",
-		"slots": [
+                "slots": [
         {
           "name": "Note",
           "type": "LIST_OF_NOTES"
         }
       ]
+    },
+    {
+      "intent": "TeachNote"
+    },
+    {
+      "intent": "GuitarTuner"
+    },
+    {
+      "intent": "RepeatString"
+    },
+    {
+      "intent": "NextString"
+    },
+    {
+      "intent": "NextPart"
+    },
+    {
+      "intent": "TeachChord"
+    },
+    {
+      "intent": "PlayGuitar"
     },
     {
       "intent": "Replay"
@@ -41,7 +80,7 @@
     },
     {
       "intent": "AMAZON.RepeatIntent"
-    },    
+    },
     {
       "intent": "AMAZON.CancelIntent"
     }

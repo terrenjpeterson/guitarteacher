@@ -1,0 +1,9 @@
+This skill has different features. To get started, just ask any of the following, or say Help for detailed instructions.
+
+Teach Notes - Learn how to play individual notes on a guitar. This technique is also called picking, and requires understanding how to find each note on the guitar, then playing it based on placement of your fingers
+
+Teach Chords - Learn how to play multiple notes at once.  These are called chords, and the technique is sometimes referred to as strumming the guitar.  The focus is around finger placement, and how to recognize the different names (i.e. C Major, A Minor, etc.)
+
+Play Guitar - Alexa will playback individual notes or chords based on your requests. Allows for playback after repeated notes are given.
+
+Tune Guitar - Each of the six strings will be played repeatedly so you can match the sound of a true note with what your instrument is. Allows repeating each string so you are not rushed when tuning each string.
