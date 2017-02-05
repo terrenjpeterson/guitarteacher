@@ -6,9 +6,9 @@ var aws = require('aws-sdk');
 var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/";
 
 // this is used by the VoiceLabs analytics
-var APP_ID = 'amzn1.ask.skill.6e5055b7-6b7f-41ce-a4fe-08b186412edc';
+var APP_ID = 
 var VoiceInsights =require('voice-insights-sdk'),
-  VI_APP_TOKEN = '7bdd2730-e1da-11a6-3a6b-0eb19d13e26e';
+  VI_APP_TOKEN = 
 
 // six string guitar notes
 var fretboard = {
@@ -22,14 +22,14 @@ var fretboard = {
 
 // chord translation
 var chords = [
-    {"chordName":"cmajor","chordDesc":"C Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5]},
-    {"chordName":"amajor","chordDesc":"A Major","strings":[0,1,1,1,0,-1],"fingers":[4,3,2]},
-    {"chordName":"gmajor","chordDesc":"G Major","strings":[3,0,0,0,2,1],"fingers":[5,6,1]},
-    {"chordName":"emajor","chordDesc":"E Major","strings":[0,0,1,2,2,0],"fingers":[3,5,4]},
-    {"chordName":"dmajor","chordDesc":"D Major","strings":[2,3,2,0,-1,-1],"fingers":[3,1,2]},
-    {"chordName":"aminor","chordDesc":"A Minor","strings":[0,1,2,2,0,-1],"fingers":[2,4,3]},
-    {"chordName":"eminor","chordDesc":"E Minor","strings":[0,0,0,2,2,0],"fingers":[0,5,4]},
-    {"chordName":"dminor","chordDesc":"D Minor","strings":[1,3,2,0,-1,-1],"fingers":[1,3,2]}
+    {"chordName":"cmajor","chordDesc":"C Major","strings":[0,1,0,2,3,-1],"fingers":[2,4,5],"nextChord":"A Major"},
+    {"chordName":"amajor","chordDesc":"A Major","strings":[0,1,1,1,0,-1],"fingers":[4,3,2],"nextChord":"G Major"},
+    {"chordName":"gmajor","chordDesc":"G Major","strings":[3,0,0,0,2,1],"fingers":[5,6,1],"nextChord":"E Major"},
+    {"chordName":"emajor","chordDesc":"E Major","strings":[0,0,1,2,2,0],"fingers":[3,5,4],"nextChord":"D Major"},
+    {"chordName":"dmajor","chordDesc":"D Major","strings":[2,3,2,0,-1,-1],"fingers":[3,1,2],"nextChord":"A Minor"},
+    {"chordName":"aminor","chordDesc":"A Minor","strings":[0,1,2,2,0,-1],"fingers":[2,4,3],"nextChord":"E Minor"},
+    {"chordName":"eminor","chordDesc":"E Minor","strings":[0,0,0,2,2,0],"fingers":[0,5,4],"nextChord":"D Minor"},
+    {"chordName":"dminor","chordDesc":"D Minor","strings":[1,3,2,0,-1,-1],"fingers":[1,3,2],"nextChord":"C Major"}
 ];
 
 // this is the song catalog, including different variations on how someone may request it
@@ -272,6 +272,7 @@ function playGuitar(session, callback) {
             "chord will be played like this.";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/Chordcmajor.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
+        audioOutput = audioOutput + "Available major chords are A, C, D, E, and G. Minor chords are A, D, E.";
         audioOutput = audioOutput + "</speak>";
 
     var cardOutput = "Play Guitar\n" +
@@ -304,7 +305,7 @@ function teachNote(session, callback) {
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/e3.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
 
-        audioOutput = audioOutput + "What you just heard was the note E. It's the native note on the first string " +
+        audioOutput = audioOutput + "<s>What you just heard was the note E.</s>It's the native note on the first string " +
             "of the guitar. If we start by focusing on the notes for the first string, it's the best place to start " +
             "learning how the scale works. ";
         audioOutput = audioOutput + "The fretboard is the part of the guitar that the strings run along, and allow " +
@@ -313,13 +314,12 @@ function teachNote(session, callback) {
             "It should sound like this. ";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/f3.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
-
-        audioOutput = audioOutput + "That sound is one note higher than the E, and is called F. " +
+        audioOutput = audioOutput + "<s>That sound is one note higher than the E, and is called F.</s>" +
             "Now lets move your index finger up one more fret and play the string again. ";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/f3sharp.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
         audioOutput = audioOutput + "That is the next key on the scale, and is called F Sharp. " +
-            "We can think of Sharp as a half-key, meaning that the sounds is half-way between F and G. ";
+            "<s>We can think of Sharp as a half-key, meaning that the sounds is half-way between F and G.</s>";
 
         audioOutput = audioOutput + "<break time=\"1s\"/>";
         audioOutput = audioOutput + "Now you're probably noticing the pattern, but let's keep going. Go up one more fret " +
@@ -364,13 +364,13 @@ function secondString(session, callback) {
     
     var audioOutput = "<speak>";
         audioOutput = audioOutput + "Let's go down to the second string and play more notes. ";
-        audioOutput = audioOutput + "If we play the second string without using any fingers on the fretboard " +
-            "The sound that will be played is the note B. ";
+        audioOutput = audioOutput + "<s>If we play the second string without using any fingers on the fretboard, " +
+            "the sound that will be played is the note B.</s>";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/b3.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
 
         audioOutput = audioOutput + "Now use your index finger and press down on the string for the first fret. " +
-            "Then play the second string and it should play the note C. Go ahead and do that now. ";
+            "<s>Then play the second string and it should play the note C.</s>Go ahead and do that now. ";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/c3.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
 
@@ -420,8 +420,8 @@ function thirdString(session, callback) {
     
     var audioOutput = "<speak>";
         audioOutput = audioOutput + "Let's go down to the third string and play more notes. ";
-        audioOutput = audioOutput + "If we play the third string without using any fingers on the fretboard " +
-            "The sound that will be played is the note G. ";
+        audioOutput = audioOutput + "<s>If we play the third string without using any fingers on the fretboard " +
+            "The sound that will be played is the note G.</s>";
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/g2.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
 
@@ -442,13 +442,14 @@ function thirdString(session, callback) {
         audioOutput = audioOutput + "<audio src=\"https://s3.amazonaws.com/musicmakerskill/guitar/b3.mp3\" />";
         audioOutput = audioOutput + "<break time=\"1s\"/>";
 
-        audioOutput = audioOutput + "If you're ready for the next step in learning notes, say Next.";
+        audioOutput = audioOutput + "This pattern repeats itself with the remaining strings. " +
+            "If you would like to move on and learn chords, please say Teach Chords.";
         audioOutput = audioOutput + "</speak>";
 
     var cardOutput = "How to play individual notes on the third string.";
     var objectOutput = "ThirdString";
 
-    var repromptText = "When you are ready for the next section, please say Next.";
+    var repromptText = "Would you like to learn how to play chords? If so, please say Teach Chords.";
 
     // now save off data for session
     var sessionAttributes = {};
@@ -605,7 +606,8 @@ function outputIndivChord(chordData, intent, session, callback) {
         audioOutput = audioOutput + "<audio src=\"" + noteLib + "Chord" + chordData.chordName + ".mp3\" />";
 
         audioOutput = audioOutput + "<break time=\"2s\"/>";
-        audioOutput = audioOutput + "If you're ready for another chord to learn, please ask for it now.";
+        audioOutput = audioOutput + "If you're ready for another chord to learn, please ask for it now. ";
+        audioOutput = audioOutput + "For example, say Teach me how to play " + chordData.nextChord + ". ";
         audioOutput = audioOutput + "</speak>";
 
     var cardOutput = "How to play " + chordData.chordDesc;
@@ -614,7 +616,7 @@ function outputIndivChord(chordData, intent, session, callback) {
     var repromptText = "Please start by saying something like Teach me how to play C Major " +
         "and I will walk you through the finger positions to play them.";
 
-	VoiceInsights.track('TeachIndivChord', null, null, (err, res) => {
+	VoiceInsights.track('TeachIndivChord', intent.slots, null, (err, res) => {
 	    console.log('voice insights logged' + JSON.stringify(res));
 
         callback(sessionAttributes,
@@ -814,6 +816,9 @@ function getHelpResponse(session, callback) {
             "The focus is around finger placement, and how to recognize the different names.\n"
         //cardOutput = cardOutput + "Teach Music is a feature that "
         cardOutput = cardOutput + "Play Guitar - Alexa will playback individual notes or chords based on your requests.\n";
+        cardOutput = cardOutput + "Tune Guitar - Each of the six strings will be played repeatedly so you can match " +
+            "the sound of a true note with what your instrument is. Allows repeating each string so you are not " +
+            "rushed when tuning each string."\n";
 
     // this is the verbiage that Alexa speaks. Some background is given on each main feature of the app.
     var speechOutput = "Guitar Teacher is an interactive tool where Alexa can be your private instructor. ";
@@ -848,7 +853,7 @@ function getHelpResponse(session, callback) {
 // this is the function that gets called to format the response when the user is done
 function handleSessionEndRequest(callback) {
     var cardTitle = "Thanks for using Guitar Player";
-    var speechOutput = "Thank you for trying out Guitar Player. Please take a moment to comment on the skill " +
+    var speechOutput = "Thank you for trying out Guitar Teacher. Please take a moment to comment on the skill " +
         "within the app on your mobile device to provide feedback on how we can improve. Have a nice day!";
         
     // Setting this to true ends the session and exits the skill.
@@ -1033,16 +1038,16 @@ function playNote(intent, session, callback) {
         // improved error handling as there is confusion around which notes have sharps and flats
         if ("PlaySharp" === intent.name && noteRequest == "b") {
             speechOutput = "I'm sorry - there is no such key as B sharp. Did you mean to say D sharp? Please " +
-                "request a valid key and I will play it.";
+                "request a valid note and I will play it.";
         } else if ("PlaySharp" == intent.name && noteRequest == "e") {
             speechOutput = "I'm sorry - there is no such key as E sharp. Did you mean to say D sharp? Please " +
-                "request a valid key and I will play it.";            
+                "request a valid note and I will play it.";            
         } else if ("PlayFlat" == intent.name && noteRequest == "c") {
             speechOutput = "I'm sorry - there is no such key as C flat. Did you mean to say C sharp? Please " +
-                "request a valid key and I will play it.";
+                "request a valid note and I will play it.";
         } else if ("PlayFlat" == intent.name && noteRequest == "f") {
             speechOutput = "I'm sorry - there is no such key as F flat. Did you mean to say F sharp? Please " +
-                "request a valid key and I will play it.";            
+                "request a valid note and I will play it.";            
         } else {
             var speechOutput = "I'm sorry, that wasn't a valid note.  If you'd like to try again, please say " +
                 "the name of a musical note now. The scale is represented by letters between A and G.";
@@ -1053,7 +1058,7 @@ function playNote(intent, session, callback) {
         // we don't want to lose the session history even though the last note was invalid
         sessionAttributes.noteHistory = noteHistory;
 
-        VoiceInsights.track('PlayNote', null, null, (err, res) => {
+        VoiceInsights.track('PlayNote', intent.slots, null, (err, res) => {
             console.log('voice insights logged' + JSON.stringify(res));
 
             callback({}, 
