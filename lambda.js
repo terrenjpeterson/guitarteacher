@@ -818,7 +818,7 @@ function getHelpResponse(session, callback) {
         cardOutput = cardOutput + "Play Guitar - Alexa will playback individual notes or chords based on your requests.\n";
         cardOutput = cardOutput + "Tune Guitar - Each of the six strings will be played repeatedly so you can match " +
             "the sound of a true note with what your instrument is. Allows repeating each string so you are not " +
-            "rushed when tuning each string."\n";
+            "rushed when tuning each string.";
 
     // this is the verbiage that Alexa speaks. Some background is given on each main feature of the app.
     var speechOutput = "Guitar Teacher is an interactive tool where Alexa can be your private instructor. ";
