@@ -14,13 +14,49 @@ This is an Alexa skill that provides instruction in how to play a guitar.
 ## Graphics
 
 The Icons that are used in the Amazon Alexa skill store are found in the /graphics folder.
+These are used when publishing the skill.
+
 The notations for playing the different chords are stored in a folder in S3.
 There is a naming notation to them that maps to the code within the skill.
 This includes a suffix of -small.PNG vs. -large.PNG matching the format required by Alexa.
+So when the user requests a different note or chord to be played, the response dynamically changes to include the note.
+Here is the helper function that processes this logic, and the note - i.e. the objectName - is what gets passed in.
+
+```
+var noteLib = "https://s3.amazonaws.com/musicmakerskill/guitar/"; // this is the folder in the s3 bucket where all images are stored.
+
+function buildAudioCardResponse(title, output, cardInfo, objectName, repromptText, shouldEndSession) {
+    var smallImagePath = noteLib + "small-images/" + objectName + "-small.PNG";
+    var largeImagePath = noteLib + "large-images/" + objectName + "-large.PNG";
+    return {
+        outputSpeech: {
+            type: "SSML",
+            ssml: output
+        },
+        card: {
+            type: "Standard",
+            title: title,
+            text: cardInfo,
+            image: {
+                smallImageUrl: smallImagePath,
+                largeImageUrl: largeImagePath
+            }
+        },
+        reprompt: {
+            outputSpeech: {
+                type: "PlainText",
+                text: repromptText
+            }
+        },
+        shouldEndSession: shouldEndSession
+    };
+}
+```
 
 ## NLU Models
 
 The intent schema, custom slots, sample utterances, and other data attributes in the NLU models are stored in the /models folder.
+This includes two custom slots, one with the notes in the scale, the other of the major and minor chord names that this skill teaches.
 
 ## How to Play MP3 files in a Skill
 
