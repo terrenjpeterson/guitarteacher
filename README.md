@@ -9,6 +9,7 @@ This is an Alexa skill that provides instruction in how to play a guitar.
 - [Where are the graphics stored?](#graphics)
 - [Where are the NLU models stored?](#nlu-models)
 - [How does this skill play sound recordings?](#how-to-play-mp3-files-in-a-skill)
+- [How does it remember which string was previously played?](#how-to-save-session-data)
 
 ## Graphics
 
@@ -40,7 +41,13 @@ var repromptText = "Please start by saying something like Play Guitar";
 buildAudioResponse(cardTitle, audioOutput, cardOutput, repromptText, shouldEndSession));
 ```
 
-The markup needs to have "<speak>" notated to indicate that SSML will be used.
-Then within the SSML, use the markup <audio src="https://s3.aws.../file.mp3"> to provide the location of the mp3 file.
+The markup needs to have "speak" notated to indicate that SSML will be used.
+Then within the SSML, use the markup "audio src="https://s3.aws.../file.mp3"" to provide the location of the mp3 file.
 
 For an example of a skill using the current version of the NodeJS SDK, please use [this repo](https://github.com/terrenjpeterson/pianoplayer).
+
+## How to Save Session Data
+
+The Alexa request/response model has the ability to save state within the message being passed back and forth to the device.
+So while the Lambda function may be stateless, the state is actually within the message.
+This is how when playing multiple strings in a dialog with a user, the skill knows which was the last string played.
